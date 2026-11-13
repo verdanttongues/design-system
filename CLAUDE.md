@@ -15,11 +15,13 @@ repository.
 stays its master: edit it here and re-copy it byte-identical, never edit the copy
 ([A382](decisions.md)). Commit a `.claude/settings.json` holding `core`'s git deny list and the
 `vt-shared` plugin entries ([local-setup.md](local-setup.md) → §9; [A379](decisions.md)) beside this
-repository's own rules. Launch Claude inside this repository; to follow a link into `core`, run
+repository's own rules — here, a deny on `Read`, `Edit` and `Write` of `./.env`, so a session never
+holds `FIGMA_ACCESS_TOKEN` (§6). Launch Claude inside this repository; to follow a link into `core`, run
 `claude --add-dir ../core`. Commit a `design-system.code-workspace` listing `.` first and `../core`
 second.
 
-**Decided 2026-11-13 ([A388](decisions.md)).** Not scaffolded yet, and the Figma file does not exist
+**Decided 2026-11-13 ([A388](decisions.md)); the repository was created the same day** with the
+Claude Code setup above and nothing else. Not scaffolded yet, and the Figma file does not exist
 yet: the pipeline below is decided, the first design is not.
 
 ## 0. What is already fixed
@@ -149,7 +151,9 @@ L32's events reopen it for Sanity. Font licences are [L20](decisions.md)'s.
   any plan; Figma's Variables REST endpoints are Enterprise-only and are not relied on, since A
   covers variables.
 - **The typefaces** are not chosen; each needs its licence checked under L20 first.
-- **The repository is not created**, and neither site is scaffolded.
+- **The repository is created but not scaffolded** (2026-11-13): it holds `CLAUDE.md`,
+  `.env.example`, `.claude/settings.json`, `.gitignore` and the workspace file — no package, build or
+  CI yet. Neither site is scaffolded.
 
 ## Commands
 
