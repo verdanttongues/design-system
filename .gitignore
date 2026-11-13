@@ -1,6 +1,10 @@
 # Dependencies
 node_modules/
 
+# The style guide — built locally and by CI as an artifact, never committed or deployed.
+# dist/ is NOT ignored: it is committed and CI checks it matches a fresh build (DS1).
+build/
+
 # Environment — only .env.example is committed; it is a byte-identical copy of
 # core/docs/design-system.env.example (A382). FIGMA_ACCESS_TOKEN lives in .env only.
 .env

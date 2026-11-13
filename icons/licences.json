@@ -1,0 +1,4 @@
+{
+  "$description": "Every file under icons/, keyed by its path under icons/: { \"source\": \"vt\" } for VT-made, or { \"source\": \"licensed\", \"licence\": \"<path under icons/>\" } (CLAUDE.md → §5.5).",
+  "icons": {}
+}

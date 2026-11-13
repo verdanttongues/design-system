@@ -20,9 +20,11 @@ holds `FIGMA_ACCESS_TOKEN` (§6). Launch Claude inside this repository; to follo
 `claude --add-dir ../core`. Commit a `design-system.code-workspace` listing `.` first and `../core`
 second.
 
-**Decided 2026-11-13 ([A388](decisions.md)); the repository was created the same day** with the
-Claude Code setup above and nothing else. Not scaffolded yet, and the Figma file does not exist
-yet: the pipeline below is decided, the first design is not.
+**Decided 2026-11-13 ([A388](decisions.md)); the repository was created and scaffolded the same
+day**: the build, the §5 checks and CI exist, with no tokens, fonts or icons in them. The Figma file
+does not exist yet: the pipeline below is decided and built, the first design is not. **The
+repository's own decisions** — its token layout, mode selector and stack — are `DS<n>` rows in its
+`docs/decisions.md`, never here.
 
 ## 0. What is already fixed
 
@@ -85,10 +87,11 @@ Sites style with semantic tokens only, so a palette change is one alias edit.
 
 ## 3. What this repository produces
 
-- **`dist/tokens.css`** — every token as a CSS custom property on `:root`, with modes (e.g. dark)
-  as attribute or media-query blocks. Each site imports it into its own CSS, so it is bundled and
-  hashed with the site.
-- **`dist/tokens.json`** — flat name → value, for the Studio's theme-colour list and for tests.
+- **`dist/tokens.css`** — every token as a CSS custom property on `:root`, with each mode (e.g.
+  dark) as a `[data-mode="<mode>"]` block of its overrides (DS3). Each site imports it into its own
+  CSS, so it is bundled and hashed with the site.
+- **`dist/tokens.json`** — flat name → value, for the Studio's theme-colour list and for tests; one
+  `dist/tokens.<mode>.json` per mode. **`dist/` is committed** (§5.2).
 - **`fonts/`** — self-hosted WOFF2 files and their `@font-face` rules, with each font's licence
   file beside it. **A font's licence must allow self-hosting and embedding in a website**, and is
   an item under [L20](decisions.md) (third-party licences) before the first font ships.
@@ -119,8 +122,9 @@ Sites style with semantic tokens only, so a palette change is one alias edit.
 Pin every workflow `uses:` to a commit SHA ([A307](decisions.md)).
 
 1. **Valid DTCG.** Every file under `tokens/` parses, every alias resolves, no cycle.
-2. **The build is reproducible.** `dist/` is rebuilt and must match what is committed, or is built
-   only in CI — decide at scaffold, and record it here.
+2. **The build is reproducible.** **`dist/` is committed**, and CI rebuilds it and fails unless it
+   matches byte for byte (`npm run check:dist`). Decided at scaffold (DS1): a git dependency pinned
+   to a commit installs without building, and the CSS a change ships is in its diff.
 3. **Contrast.** Every declared text/background pair meets **WCAG 2.2 AA** (4.5:1 body, 3:1 large
    text and UI), in every mode. A failing pair fails the build.
 4. **No other origin.** Fail on any `@import`, `url()` or font source naming a host. Fonts and icons
@@ -151,18 +155,20 @@ L32's events reopen it for Sanity. Font licences are [L20](decisions.md)'s.
   any plan; Figma's Variables REST endpoints are Enterprise-only and are not relied on, since A
   covers variables.
 - **The typefaces** are not chosen; each needs its licence checked under L20 first.
-- **The repository is created but not scaffolded** (2026-11-13): it holds `CLAUDE.md`,
-  `.env.example`, `.claude/settings.json`, `.gitignore` and the workspace file — no package, build or
-  CI yet. Neither site is scaffolded.
+- **The repository is scaffolded** (2026-11-13) with no design in it: the build, the §5 checks
+  and CI run over an empty `tokens/`, `fonts/` and `icons/`. **The import (§2) is not written** — it
+  is built against the first real export. No release is tagged; the first is `design-v0.1.0`, once
+  the first token set lands. Neither site is scaffolded.
 
 ## Commands
 
-Intended, not verified — the repository is not scaffolded.
+Verified at scaffold, except `import`, which is not written yet.
 
 ```sh
+npm run build        # every check, then Style Dictionary → dist/ (commit what it writes)
+npm test             # DTCG validity, contrast, no other origin, licences, and the build's own tests
+npm run check:dist   # fails unless the committed dist/ equals a fresh build — CI runs it
+npm run styleguide   # the generated style guide → build/styleguide/index.html
 npm run import -- --file <figma-file-key> --export <path-to-dtcg-export.json>
-                     # A + B → tokens/, plus the conflict report; needs FIGMA_ACCESS_TOKEN in .env
-npm run build        # Style Dictionary → dist/
-npm test             # DTCG validity, contrast, no other origin, licences
-npm run styleguide   # the generated style guide, locally
+                     # NOT WRITTEN: A + B → tokens/, plus the conflict report; needs FIGMA_ACCESS_TOKEN
 ```

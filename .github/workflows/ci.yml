@@ -1,0 +1,42 @@
+# Design system CI (CLAUDE.md → §5): the checks, a reproducible dist/, and the style guide as an
+# artifact, on every PR and push to main. Every action is pinned to a commit SHA, the same pins
+# core and sanity-studio use; the comment is the tag it came from (core A307).
+#
+# Reads no secret and never reads Figma (CLAUDE.md → §6): it builds from the committed tokens.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Fails on a high or critical advisory; moderates are reviewed when Dependabot proposes
+      # the fix. Style Dictionary is a build-time devDependency; nothing it pulls in ships.
+      - run: npm audit --audit-level=high
+      # §5.1 valid DTCG, §5.3 contrast, §5.4 no other origin, §5.5 licences — and the build's
+      # own tests.
+      - run: npm test
+      # §5.2: dist/ is committed (DS1) and must equal a fresh build, byte for byte.
+      - run: npm run check:dist
+      # §5.6: the style guide builds, and is uploaded; it is never deployed.
+      - run: npm run styleguide
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: styleguide
+          path: build/styleguide/
+          if-no-files-found: error

@@ -1,0 +1,4 @@
+{
+  "$description": "Every text/background pair a site renders, checked against WCAG 2.2 AA in the base and every mode (CLAUDE.md → §5.3). size: body (4.5:1), large (3:1), ui (3:1). Names are semantic colour tokens.",
+  "pairs": []
+}
