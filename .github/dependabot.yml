@@ -1,0 +1,17 @@
+# Dependabot proposes the bumps; the pins in ci.yml and package-lock.json are
+# what actually move, each in a reviewed PR (core A307). ci.yml's moderate
+# advisories are reviewed when this proposes the fix.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
