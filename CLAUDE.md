@@ -85,11 +85,28 @@ Figma (Variables, text and effect styles)
 *Semantic* tokens name a use and alias a primitive (`color.text.default`, `color.surface.brand`).
 Sites style with semantic tokens only, so a palette change is one alias edit.
 
+**The Figma file is shaped so its export needs no renaming** ([A396](decisions.md) for the plan):
+
+| In Figma | Holds | Becomes |
+|---|---|---|
+| Variable collection **`primitive`** | The palette and scales as raw values: `color/green/600`, `space/4` (number, px) | `tokens/primitive/` |
+| Variable collection **`semantic`** | Uses, **each an alias of a primitive variable**, never a raw value, each with a description: `color/text/default` | `tokens/semantic/` |
+| Text styles `type/<name>`; effect styles `shadow/<name>` | Typography (family, size, weight, line height, letter spacing only — DS7) and shadows; read by B | `tokens/primitive/` |
+| A **Contrast pairs** frame on the Semantic page | Each text-on-background pair a site renders, and its size (body, large, UI) | `tokens/contrast-pairs.json`, copied at import |
+| The **Icons** page | Favicon, app icons, logo marks as vector frames, each marked VT-made or licensed | `icons/` and `icons/licences.json` |
+
+Names are lowercase letters, digits and single hyphens, grouped by `/`; **colours sit under
+`color/` and nothing else does**; a semantic name says its use, never its colour
+(`color/surface/default`, not `color/surface/white`), so a later mode re-points aliases and renames
+nothing ([A396](decisions.md)). One file holds the design system.
+
 ## 3. What this repository produces
 
 - **`dist/tokens.css`** — every token as a CSS custom property on `:root`, with each mode (e.g.
   dark) as a `[data-mode="<mode>"]` block of its overrides (DS3). Each site imports it into its own
-  CSS, so it is bundled and hashed with the site.
+  CSS, so it is bundled and hashed with the site. **Until GA there is no mode**: both sites ship
+  light only, and dark mode is a GA deliverable ([A396](decisions.md)), since the Starter plan has
+  no variable modes.
 - **`dist/tokens.json`** — flat name → value, for the Studio's theme-colour list and for tests; one
   `dist/tokens.<mode>.json` per mode. **`dist/` is committed** (§5.2).
 - **`fonts/`** — self-hosted WOFF2 files and their `@font-face` rules, with each font's licence
@@ -151,9 +168,12 @@ L32's events reopen it for Sanity. Font licences are [L20](decisions.md)'s.
 ## 8. Status and open items
 
 - **The Figma file does not exist yet.** The first design produces the first export (A) and read (B).
-- **The Figma plan and seat type** are not recorded. Source B's styles and file endpoints work on
-  any plan; Figma's Variables REST endpoints are Enterprise-only and are not relied on, since A
-  covers variables.
+- **The Figma plan is Starter** (recorded 2026-11-17, [A396](decisions.md)): no variable modes,
+  one team, one folder, three files. The seat type is not recorded. Source B's styles and file
+  endpoints work on any plan; Figma's Variables REST endpoints are Enterprise-only and are not
+  relied on, since A covers variables. **Unconfirmed: whether Starter can export variables to
+  JSON (A)** — Figma's help states no per-plan rule; checked at the first export, and if it cannot,
+  the fallback is decided then.
 - **The typefaces** are not chosen; each needs its licence checked under L20 first.
 - **The repository is scaffolded** (2026-11-13) with no design in it: the build, the §5 checks
   and CI run over an empty `tokens/`, `fonts/` and `icons/`. **The import (§2) is not written** — it

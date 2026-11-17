@@ -10,7 +10,7 @@ left to the repository.
 
 | Id | Question | Notes |
 |---|---|---|
-| **DS6** | **Does a mode also follow the system preference?** A `dark` mode could also apply under `@media (prefers-color-scheme: dark)` when a page sets no `data-mode` | No mode is designed yet. Decide with the first dark design: CSS-only following needs the media block; a site toggle needs the attribute (DS3), and both can coexist |
+| **DS6** | **Does a mode also follow the system preference?** A `dark` mode could also apply under `@media (prefers-color-scheme: dark)` when a page sets no `data-mode` | **Deferred to GA with dark mode itself** (`core` A396, 2026-11-17): the Starter plan has no variable modes, so `tokens/modes/` stays empty until then. Decide with the first dark design: CSS-only following needs the media block; a site toggle needs the attribute (DS3), and both can coexist |
 
 ## Decided
 
