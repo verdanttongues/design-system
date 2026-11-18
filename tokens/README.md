@@ -6,6 +6,7 @@ from Figma's variable export (source A), or its REST API where A has none (B), a
 screenshot (C).
 
 `npm test` checks every rule below, and `npm run build` refuses to run on a set that breaks one.
+What Figma's export contains, what the import changes, and how to export: `docs/figma-export.md`.
 
 ## Layout (DS2)
 

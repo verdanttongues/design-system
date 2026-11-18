@@ -86,6 +86,15 @@ test('a token holding child tokens fails', () => {
   assertError(color({ a: { $value: '#fff', b: { $value: '#000' } } }), /a token cannot contain "b"/);
 });
 
+test('Figma\'s flat extension keys, as its export writes them, fail — on a token and on the root', () => {
+  assertError(color({ a: { $value: '#fff', $extensions: { 'com.figma.variableId': 'VariableID:x', 'com.figma.scopes': ['ALL_SCOPES'] } } }), /"com\.figma\.variableId", "com\.figma\.scopes" must be stripped/);
+  assertError({ 'tokens/primitive/c.tokens.json': { color: { $type: 'color', a: { $value: '#fff' } }, $extensions: { 'com.figma.modeName': 'Mode 1' } } }, /"com\.figma\.modeName" must be stripped/);
+});
+
+test('another vendor\'s extension is kept', () => {
+  assert.deepEqual(errorsFor(color({ a: { $value: '#fff', $extensions: { 'org.example.note': 1 } } })), []);
+});
+
 test('Figma extensions left in by the import fail', () => {
   assertError(color({ a: { $value: '#fff', $extensions: { 'com.figma': { variableId: 'x' } } } }), /com\.figma/);
 });

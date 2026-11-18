@@ -16,13 +16,14 @@ stays its master: edit it here and re-copy it byte-identical, never edit the cop
 ([A382](decisions.md)). Commit a `.claude/settings.json` holding `core`'s git deny list and the
 `vt-shared` plugin entries ([local-setup.md](local-setup.md) → §9; [A379](decisions.md)) beside this
 repository's own rules — here, a deny on `Read`, `Edit` and `Write` of `./.env`, so a session never
-holds `FIGMA_ACCESS_TOKEN` (§6). Launch Claude inside this repository; to follow a link into `core`, run
+reads a developer's local values (§6). Launch Claude inside this repository; to follow a link into `core`, run
 `claude --add-dir ../core`. Commit a `design-system.code-workspace` listing `.` first and `../core`
 second.
 
 **Decided 2026-11-13 ([A388](decisions.md)); the repository was created and scaffolded the same
 day**: the build, the §5 checks and CI exist, with no tokens, fonts or icons in them. The Figma file
-does not exist yet: the pipeline below is decided and built, the first design is not. **The
+exists, on the Starter plan, with test variables only: the pipeline below is decided and built, the
+import and the first design are not. **The
 repository's own decisions** — its token layout, mode selector and stack — are `DS<n>` rows in its
 `docs/decisions.md`, never here.
 
@@ -45,11 +46,11 @@ repository's own decisions** — its token layout, mode selector and stack — a
 ## 1. The pipeline
 
 ```
-Figma (Variables, text and effect styles)
-  ├─ A: built-in variable export (DTCG JSON)  ──┐
-  ├─ B: REST API read (styles, descriptions,    ├─► scripts/import → tokens/*.tokens.json (DTCG) ─► PR, review
-  │     which values the frames use)            │                         │
-  └─ C: screenshots — findings only, never values┘                        ▼
+Figma (Variables — colours, sizes, and typography and shadows as variable groups)
+  ├─ A: built-in variable export, one zip per  ──┐
+  │     collection, downloaded by hand           ├─► npm run import → tokens/*.tokens.json (DTCG) ─► PR, review
+  └─ C: screenshots — findings only, never values┘                        │
+     (B, the REST API, is out until a paid plan — A398)                   ▼
                                                      Style Dictionary build (CI)
                                                        ├─ dist/tokens.css      CSS custom properties
                                                        ├─ dist/tokens.json     flat values (Studio, tests)
@@ -60,23 +61,28 @@ Figma (Variables, text and effect styles)
                          install it as a git dependency pinned to a commit SHA
 ```
 
-## 2. Importing from Figma — three sources, one precedence
+## 2. Importing from Figma — one source of values
 
 | Source | What it gives | Role |
 |---|---|---|
-| **A — Figma's built-in variable export (DTCG JSON)** | Every variable in a collection: exact values, names, groups, aliases, modes | **Primary.** Values come from here first |
-| **B — Figma's REST API, scripted** | Text styles (family, weight, size, line height, letter spacing), effect styles (shadows, blur), descriptions, and which values the frames actually use | **Fills A's gaps.** Typography and effects are usually Figma *styles*, not variables, so A lacks them; A's export also drops descriptions |
+| **A — Figma's built-in variable export** | One zip per collection, named after it, holding one `<mode>.tokens.json` per mode: values, names, groups, aliases, descriptions, scopes | **The only source of values** ([A398](decisions.md)). Downloaded by hand and handed to the import unchanged |
+| **B — Figma's REST API** | Text and effect styles, and which values the frames use | **Out until a paid plan** ([A398](decisions.md)). Typography and shadows are variables instead (below) |
 | **C — Screenshots** | How the design looks: colours used, contrast in place | **Findings only, never values.** Sampled colours are approximate (compression, colour profiles) |
+
+**What Figma's export actually contains, and the import's handling of each part, is the
+repository's `docs/figma-export.md`** — observed from test exports, re-checked when Figma changes.
 
 **Rules:**
 
-1. **A value comes from A, or from B where A has none — never from C.**
-2. **A disagreement between sources is reported, never averaged.** The import writes a conflict
-   report to the pull request; a human picks the value.
+1. **A value comes from A — never from C.**
+2. **A disagreement is reported, never resolved.** An alias's copied value that differs from its
+   target's, or two names that rename alike, goes in the import's report; a human fixes Figma.
 3. **C produces findings**: a colour in the design that no token holds, a token no frame uses, a
    pair that fails contrast as rendered.
-4. **The import normalises before it commits**: strips `$extensions.com.figma` (Figma's ids and
-   scopes), restores descriptions from B, and renames to this repository's token naming. The
+4. **The import normalises before it commits**: maps each collection to a tier, renames to this
+   repository's naming, types each number and string from its scope, rounds, **rebuilds every alias
+   into another collection from `com.figma.aliasData`** (by collection and name — Figma writes such
+   an alias as a copied value), keeps descriptions, and strips every `com.figma.*` key. The
    committed `tokens/` files are DTCG and readable without Figma.
 5. **Re-importing into Figma is not relied on.** Figma's DTCG import has reported failures; Figma
    is kept in step by a designer, not by a round trip.
@@ -85,20 +91,22 @@ Figma (Variables, text and effect styles)
 *Semantic* tokens name a use and alias a primitive (`color.text.default`, `color.surface.brand`).
 Sites style with semantic tokens only, so a palette change is one alias edit.
 
-**The Figma file is shaped so its export needs no renaming** ([A396](decisions.md) for the plan):
+**The Figma file's shape** ([A396](decisions.md) for the plan, [A398](decisions.md) for the
+import). Figma's own naming is kept; the import renames:
 
 | In Figma | Holds | Becomes |
 |---|---|---|
-| Variable collection **`primitive`** | The palette and scales as raw values: `color/green/600`, `space/4` (number, px) | `tokens/primitive/` |
-| Variable collection **`semantic`** | Uses, **each an alias of a primitive variable**, never a raw value, each with a description: `color/text/default` | `tokens/semantic/` |
-| Text styles `type/<name>`; effect styles `shadow/<name>` | Typography (family, size, weight, line height, letter spacing only — DS7) and shadows; read by B | `tokens/primitive/` |
+| A **primitive** variable collection | The palette and scales as raw values: `Color/Green/600`, `Space/4` (number, scoped) | `tokens/primitive/` |
+| A **semantic** variable collection | Uses, **each an alias of a primitive variable**, never a raw value, each with a description: `Color/Text/Default` | `tokens/semantic/` |
+| Variable groups `Type/<name>/` and `Shadow/<name>/` | Typography as Font Family, Font Size, Font Weight, Line Height, Letter Spacing (DS7); shadows as Color, X, Y, Blur, Spread — each group combined into one token | `tokens/primitive/` |
 | A **Contrast pairs** frame on the Semantic page | Each text-on-background pair a site renders, and its size (body, large, UI) | `tokens/contrast-pairs.json`, copied at import |
 | The **Icons** page | Favicon, app icons, logo marks as vector frames, each marked VT-made or licensed | `icons/` and `icons/licences.json` |
 
-Names are lowercase letters, digits and single hyphens, grouped by `/`; **colours sit under
-`color/` and nothing else does**; a semantic name says its use, never its colour
-(`color/surface/default`, not `color/surface/white`), so a later mode re-points aliases and renames
-nothing ([A396](decisions.md)). One file holds the design system.
+**Every variable has a specific scope** — the scope is how a bare number becomes a size, and
+`ALL_SCOPES` is refused. Names may use Figma's capitals and spaces, but two that rename alike are
+refused, and a rename in Figma renames the token. A semantic name says its use, never its colour
+(`Surface/Default`, not `Surface/White`), so a later mode re-points aliases and renames nothing
+([A396](decisions.md)). One file holds the design system.
 
 ## 3. What this repository produces
 
@@ -151,12 +159,11 @@ Pin every workflow `uses:` to a commit SHA ([A307](decisions.md)).
 
 ## 6. Secrets
 
-- **`FIGMA_ACCESS_TOKEN`** — a Figma personal access token, **read-only**, for source B. It lives in
-  the developer's uncommitted `.env` only: **never in CI, never committed, never in a session that
-  writes it into a file.** The import runs on a developer's machine and opens a pull request with
-  its output; CI builds from the committed tokens and needs no Figma access.
-- Nothing in this repository is a secret otherwise: tokens, fonts and icons are published in both
-  sites' bundles.
+- **None is held** ([A398](decisions.md)). The import reads downloaded export files, so no Figma
+  token exists; CI builds from the committed tokens and needs no Figma access. If source B returns
+  with a paid plan, its **read-only** token returns with it: the developer's uncommitted `.env`
+  only, **never in CI, never committed, never in a session that writes it into a file.**
+- Tokens, fonts and icons are published in both sites' bundles.
 
 ## 7. Legal
 
@@ -167,17 +174,14 @@ L32's events reopen it for Sanity. Font licences are [L20](decisions.md)'s.
 
 ## 8. Status and open items
 
-- **The Figma file does not exist yet.** The first design produces the first export (A) and read (B).
+- **The Figma file exists**, with test variables only; the first design produces the first export.
 - **The Figma plan is Starter** (recorded 2026-11-17, [A396](decisions.md)): no variable modes,
-  one team, one folder, three files. The seat type is not recorded. Source B's styles and file
-  endpoints work on any plan; Figma's Variables REST endpoints are Enterprise-only and are not
-  relied on, since A covers variables. **Unconfirmed: whether Starter can export variables to
-  JSON (A)** — Figma's help states no per-plan rule; checked at the first export, and if it cannot,
-  the fallback is decided then.
+  one team, one folder, three files. The seat type is not recorded. **Starter exports variables**
+  (confirmed 2026-11-18, [A398](decisions.md)); the REST API is not used.
 - **The typefaces** are not chosen; each needs its licence checked under L20 first.
 - **The repository is scaffolded** (2026-11-13) with no design in it: the build, the §5 checks
   and CI run over an empty `tokens/`, `fonts/` and `icons/`. **The import (§2) is not written** — it
-  is built against the first real export. No release is tagged; the first is `design-v0.1.0`, once
+  is built against the test exports `docs/figma-export.md` records. No release is tagged; the first is `design-v0.1.0`, once
   the first token set lands. Neither site is scaffolded.
 
 ## Commands
@@ -189,6 +193,6 @@ npm run build        # every check, then Style Dictionary → dist/ (commit what
 npm test             # DTCG validity, contrast, no other origin, licences, and the build's own tests
 npm run check:dist   # fails unless the committed dist/ equals a fresh build — CI runs it
 npm run styleguide   # the generated style guide → build/styleguide/index.html
-npm run import -- --file <figma-file-key> --export <path-to-dtcg-export.json>
-                     # NOT WRITTEN: A + B → tokens/, plus the conflict report; needs FIGMA_ACCESS_TOKEN
+npm run import -- <folder of export zips>
+                     # NOT WRITTEN: A → tokens/, plus the report; reads files only, no token
 ```
